@@ -13,6 +13,10 @@ var _ = require("lodash"),
     Database = require("./database");
 
 
+// Original monk.onOpen callback does not handle errors
+monk.prototype.onOpen = function (err, db) {
+  this.emit("open", err, db);
+};
 
 /**
  * All db connections.
@@ -48,27 +52,17 @@ var Manager = (function () {
 
         debug("connect to " + url.join(", "));
 
-        var db = monk.apply(null, url);
-
         return new Q(function checkConnection(resolve, reject) {
-          var connectionTimeout = setTimeout(function () {
-            reject(new Error("Timed out connecting to db"));
-          }, options.timeout);
-
-          db.once("open", function () {
-            clearTimeout(connectionTimeout);
-
-            // until https://github.com/Automattic/monk/issues/24 is resolve we
-            // manually check, see http://stackoverflow.com/questions/27547979/db-connection-error-handling-with-monk
-            if (2 !== _.deepGet(db, "driver._state")) {
-              reject(new Error("Failed to connect to db"));
-            } else {
-              var instance = new Database(db);
-
-              dbConnections.push(instance);
-
-              resolve(instance);
+          var monkOptions = { connectTimeoutMS: options.timeout };
+          var db = monk.call(null, url, monkOptions, function monkCallback(err, val) {
+            if (err) {
+              return reject(err);
             }
+
+            var instance = new Database(db);
+            dbConnections.push(instance);
+
+            resolve(instance);
           });
         });
       },
