@@ -36,7 +36,7 @@ test['connect'] = {
   },
   /**
    * TODO: Fix
-   * 
+   *
    * Test completes successfully but process hangs because handles not yet 
    * cleaned up...why not!? Initial investigation points to something in either 
    * Monk or mongodb node.js package - needs looking into
@@ -68,9 +68,9 @@ test['connect'] = {
     },
   },
   'replica set': function*() {
-    var db = yield Robe.connect(['127.0.0.1/robe-test/robe-test','localhost/robe-test']);
+    var db = yield Robe.connect(['127.0.0.1/robe-test','localhost/robe-test']);
 
-    db.should.be.instanceOf(Robe.Database);    
+    db.should.be.instanceOf(Robe.Database);
   },
 };
 
