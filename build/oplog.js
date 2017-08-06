@@ -13,7 +13,8 @@ var _ = require("lodash"),
     mongo = require("mongoskin"),
     debug = require("debug")("robe-oplog"),
     EventEmitter = require("eventemitter2").EventEmitter2,
-    Q = require("bluebird");
+    Q = require("bluebird"),
+    url = require("url");
 
 
 
@@ -106,6 +107,7 @@ var Oplog = (function (EventEmitter) {
           throw new Error("No MASTER server found for oplog");
         }
 
+        self.auth = url.parse(self.robeDb.db._connectionURI).auth;
         self.databaseName = self.robeDb.db._db.s.databaseName;
         self.hostPort = masterDoc.primary;
 
@@ -133,7 +135,13 @@ var Oplog = (function (EventEmitter) {
 
             debug("Connect to db " + self.hostPort);
 
-            self.db = mongo.db("mongodb://" + self.hostPort + "/local", {
+            var connectionString;
+            if (self.auth) {
+              connectionString = "mongodb://" + self.auth + "@" + self.hostPort + "/local?authSource=" + self.databaseName;
+            } else {
+              connectionString = "mongodb://" + self.hostPort + "/local";
+            }
+            self.db = mongo.db(connectionString, {
               native_parser: true
             });
 
