@@ -96,28 +96,7 @@ var Oplog = (function (EventEmitter) {
       writable: true,
       configurable: true
     },
-    _resolveServerDb: {
-      value: function _resolveServerDb() {
-        var self = this;
-
-        // find out master server
-        var masterDoc = self.robeDb.db._db.topology.isMasterDoc;
-
-        if (!masterDoc.ismaster) {
-          throw new Error("No MASTER server found for oplog");
-        }
-
-        self.auth = url.parse(self.robeDb.db._connectionURI).auth;
-        self.databaseName = self.robeDb.db._db.s.databaseName;
-        self.hostPort = masterDoc.primary;
-
-        debug("Resolved db: " + self.hostPort + "/" + self.databaseName);
-      },
-      writable: true,
-      configurable: true
-    },
     _connectToServer: {
-
 
 
       /**
@@ -131,17 +110,14 @@ var Oplog = (function (EventEmitter) {
           if (self.db) {
             return;
           } else {
-            self._resolveServerDb();
-
-            debug("Connect to db " + self.hostPort);
-
-            var connectionString;
-            if (self.auth) {
-              connectionString = "mongodb://" + self.auth + "@" + self.hostPort + "/local?authSource=" + self.databaseName;
-            } else {
-              connectionString = "mongodb://" + self.hostPort + "/local";
+            self.databaseName = self.robeDb.db._db.s.databaseName;
+            var connectionUrl = url.parse(self.robeDb.db._connectionURI, true);
+            connectionUrl.path = "/local";
+            if (connectionUrl.auth) {
+              connectionUrl.query.authSource = self.databaseName;
             }
-            self.db = mongo.db(connectionString, {
+
+            self.db = mongo.db(connectionUrl.toString(), {
               native_parser: true
             });
 
