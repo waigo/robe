@@ -112,12 +112,12 @@ var Oplog = (function (EventEmitter) {
           } else {
             self.databaseName = self.robeDb.db._db.s.databaseName;
             var connectionUrl = url.parse(self.robeDb.db._connectionURI, true);
-            connectionUrl.path = "/local";
+            connectionUrl.pathname = "/local";
             if (connectionUrl.auth) {
               connectionUrl.query.authSource = self.databaseName;
             }
 
-            self.db = mongo.db(connectionUrl.toString(), {
+            self.db = mongo.db(url.format(connectionUrl), {
               native_parser: true
             });
 
