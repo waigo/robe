@@ -6,7 +6,8 @@ var _ = require('lodash'),
   debug = require('debug')('robe-oplog'),
   EventEmitter = require('eventemitter2').EventEmitter2,
   Q = require('bluebird'),
-  url = require('url');
+  url = require('url'),
+  querystring = require('querystring');
 
 
 
@@ -93,16 +94,44 @@ class Oplog extends EventEmitter {
         return;
       } else {
 
-        self.databaseName = self.robeDb.db._db.s.databaseName;
-        const connectionUrl = url.parse(self.robeDb.db._connectionURI, true);
-        connectionUrl.path = '/local';
-        if (connectionUrl.auth) {
-            connectionUrl.query.authSource = self.databaseName;
-        }
+          self.databaseName = self.robeDb.db._db.s.databaseName;
+          var connectionURI = self.robeDb.db._connectionURI;
+          var splitted = connectionURI.split("?");
+          var query = {};
+          if (splitted.length === 2) {
+              query = querystring.parse(splitted[1]);
+          }
 
-        self.db = mongo.db(connectionUrl.toString(), {
-          native_parser:true
-        });
+          connectionURI = splitted[0];
+          // clear schema
+          if (connectionURI.indexOf('://') !== -1) {
+              connectionURI = connectionURI.substring(connectionURI.indexOf('://') + 3)
+          }
+
+          var authEndIndex = connectionURI.indexOf('@');
+          var auth;
+
+          if (authEndIndex !== -1) {
+              auth = connectionURI.substring(0, authEndIndex);
+              connectionURI = connectionURI.substr(authEndIndex);
+          }
+
+          // remove database
+          connectionURI = connectionURI.substr(0, connectionURI.indexOf('/'));
+
+          var connectionString;
+          if (auth) {
+              connectionString = "mongodb://" + auth + connectionURI + "/local";
+              query.authSource = self.databaseName;
+          } else {
+              connectionString = "mongodb://" + connectionURI + "/local";
+          }
+
+          connectionString = [connectionString, querystring.stringify(query)].join("?");
+
+          self.db = mongo.db(connectionString, {
+              native_parser: true
+          });
 
         return new Q(function(resolve, reject) {
           self.db.open(function(err) {
