@@ -48,7 +48,7 @@
     "lodash-deep": "^1.5.3",
     "mongodb": "^2.2.10",
     "mongoskin": "^2.1.0",
-    "monk": "^3.1.2",
+    "monk": "^6.0.6",
     "simple-nosql-schema": "^1.1.0"
   }
 }
