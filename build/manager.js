@@ -47,14 +47,17 @@ var Manager = (function () {
         return new Q(function (resolve, reject) {
           var db = undefined;
 
-          var timeoutMs = parseInt(options.timeout);
-
-          var opts = !timeoutMs ? undefined : {
+          /*
+          const timeoutMs = parseInt(options.timeout);
+           const opts = (!timeoutMs) ? undefined : {
             server: {
               socketOptions: {
-                connectTimeoutMS: timeoutMs }
+                connectTimeoutMS: timeoutMs
+              }
             }
           };
+          */
+          var opts = { connectWithNoPrimary: true };
 
           db = monk(url, opts, function (err) {
             if (err) {
