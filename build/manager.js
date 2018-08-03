@@ -47,19 +47,7 @@ var Manager = (function () {
         return new Q(function (resolve, reject) {
           var db = undefined;
 
-          /*
-          const timeoutMs = parseInt(options.timeout);
-           const opts = (!timeoutMs) ? undefined : {
-            server: {
-              socketOptions: {
-                connectTimeoutMS: timeoutMs
-              }
-            }
-          };
-          */
-          var opts = { connectWithNoPrimary: true };
-
-          db = monk(url, opts, function (err) {
+          db = monk(url, options, function (err) {
             if (err) {
               var newErr = new Error("Failed to connect to db");
 

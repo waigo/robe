@@ -37,20 +37,7 @@ class Manager {
     return new Q((resolve, reject) => {
       let db;
 
-      /*
-      const timeoutMs = parseInt(options.timeout);
-
-      const opts = (!timeoutMs) ? undefined : {
-        server: {
-          socketOptions: {
-            connectTimeoutMS: timeoutMs
-          }
-        }
-      };
-*/
-      const opts = {connectWithNoPrimary: true};
-
-      db = monk(url, opts, (err) => {
+      db = monk(url, options, (err) => {
         if (err) {
           const newErr = new Error(`Failed to connect to db`);
           
