@@ -13,7 +13,9 @@ var _ = require("lodash"),
     mongo = require("mongoskin"),
     debug = require("debug")("robe-oplog"),
     EventEmitter = require("eventemitter2").EventEmitter2,
-    Q = require("bluebird");
+    Q = require("bluebird"),
+    url = require("url"),
+    querystring = require("querystring");
 
 
 
@@ -95,27 +97,7 @@ var Oplog = (function (EventEmitter) {
       writable: true,
       configurable: true
     },
-    _resolveServerDb: {
-      value: function _resolveServerDb() {
-        var self = this;
-
-        // find out master server
-        var masterDoc = self.robeDb.db._db.topology.isMasterDoc;
-
-        if (!masterDoc.ismaster) {
-          throw new Error("No MASTER server found for oplog");
-        }
-
-        self.databaseName = self.robeDb.db._db.s.databaseName;
-        self.hostPort = masterDoc.primary;
-
-        debug("Resolved db: " + self.hostPort + "/" + self.databaseName);
-      },
-      writable: true,
-      configurable: true
-    },
     _connectToServer: {
-
 
 
       /**
@@ -129,11 +111,42 @@ var Oplog = (function (EventEmitter) {
           if (self.db) {
             return;
           } else {
-            self._resolveServerDb();
+            self.databaseName = self.robeDb.db._db.s.databaseName;
+            var connectionURI = self.robeDb.db._connectionURI;
+            var splitted = connectionURI.split("?");
+            var query = {};
+            if (splitted.length === 2) {
+              query = querystring.parse(splitted[1]);
+            }
 
-            debug("Connect to db " + self.hostPort);
+            connectionURI = splitted[0];
+            // clear schema
+            if (connectionURI.indexOf("://") !== -1) {
+              connectionURI = connectionURI.substring(connectionURI.indexOf("://") + 3);
+            }
 
-            self.db = mongo.db("mongodb://" + self.hostPort + "/local", {
+            var authEndIndex = connectionURI.indexOf("@");
+            var auth;
+
+            if (authEndIndex !== -1) {
+              auth = connectionURI.substring(0, authEndIndex);
+              connectionURI = connectionURI.substr(authEndIndex);
+            }
+
+            // remove database
+            connectionURI = connectionURI.substr(0, connectionURI.indexOf("/"));
+
+            var connectionString;
+            if (auth) {
+              connectionString = "mongodb://" + auth + connectionURI + "/local";
+              query.authSource = self.databaseName;
+            } else {
+              connectionString = "mongodb://" + connectionURI + "/local";
+            }
+
+            connectionString = [connectionString, querystring.stringify(query)].join("?");
+
+            self.db = mongo.db(connectionString, {
               native_parser: true
             });
 
